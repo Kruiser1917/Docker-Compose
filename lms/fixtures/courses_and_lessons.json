@@ -1,0 +1,22 @@
+[
+    {
+        "model": "lms.course",
+        "pk": 1,
+        "fields": {
+            "title": "Python for Beginners",
+            "preview": "",
+            "description": "Learn Python from scratch."
+        }
+    },
+    {
+        "model": "lms.lesson",
+        "pk": 1,
+        "fields": {
+            "course": 1,
+            "title": "Introduction to Python",
+            "description": "Basics of Python programming.",
+            "preview": "",
+            "video_url": "http://example.com/python_intro"
+        }
+    }
+]

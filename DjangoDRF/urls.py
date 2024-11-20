@@ -10,4 +10,5 @@ urlpatterns = [
     path('', lambda request: redirect('api/', permanent=True)),  # Перенаправляет на /api/
     path('api/', include('lms.urls')),  # Ваши API маршруты
     path('admin/', admin.site.urls),    # Админ-панель
+    path('api/', include('users.urls')),
 ]
