@@ -1,18 +1,10 @@
-from django.urls import path, include
-from rest_framework.routers import DefaultRouter
+from django.urls import path
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-from .views import UserViewSet
+from .views import RegisterView, UserDetailView
 
-# Настройка маршрутов для ViewSet
-router = DefaultRouter()
-router.register(r'users', UserViewSet, basename='user')
-
-# Маршруты приложения users
 urlpatterns = [
-    # JWT авторизация
-    path('login/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
-    path('refresh/', TokenRefreshView.as_view(), name='token_refresh'),
-
-    # CRUD для пользователей
-    path('', include(router.urls)),
+    path('register/', RegisterView.as_view(), name='register'),  # Регистрация пользователей
+    path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),  # Получение токена
+    path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),  # Обновление токена
+    path('user/', UserDetailView.as_view(), name='user_detail'),  # Детали пользователя
 ]

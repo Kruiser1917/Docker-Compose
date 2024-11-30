@@ -1,10 +1,14 @@
 from django.core.exceptions import ValidationError
-from urllib.parse import urlparse
+import re
 
-def youtube_link_validator(value):
+
+def validate_video_url(value):
     """
-    Проверяет, что ссылка ведет на youtube.com
+    Валидатор для проверки, что ссылка ведет только на YouTube.
     """
-    parsed_url = urlparse(value)
-    if 'youtube.com' not in parsed_url.netloc:
-        raise ValidationError("Ссылка должна вести на youtube.com")
+    # Регулярное выражение для проверки YouTube URL
+    youtube_regex = r'^(https?://)?(www\.)?(youtube\.com|youtu\.be)/.+$'
+
+    # Проверяем, соответствует ли переданное значение YouTube URL
+    if not re.match(youtube_regex, value):
+        raise ValidationError("Допускаются только ссылки на YouTube.")

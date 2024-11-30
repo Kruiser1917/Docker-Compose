@@ -1,29 +1,39 @@
-from rest_framework.viewsets import ModelViewSet
+from rest_framework.views import APIView
+from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.contrib.auth import get_user_model
+from rest_framework import status
 from .serializers import UserSerializer
 
-# Получаем модель пользователя
 User = get_user_model()
 
 
-class UserViewSet(ModelViewSet):
+class RegisterView(APIView):
     """
-    ViewSet для CRUD операций над пользователями.
-    - Регистрация пользователей доступна всем.
-    - Все остальные действия требуют авторизации.
+    API для регистрации пользователей.
     """
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
+    permission_classes = [AllowAny]
 
-    def get_permissions(self):
+    def post(self, request, *args, **kwargs):
         """
-        Определение прав доступа на основе действий.
-        - Регистрация (create) доступна всем (AllowAny).
-        - Остальные действия требуют авторизации (IsAuthenticated).
+        Обработка регистрации нового пользователя.
         """
-        if self.action in ['create']:
-            self.permission_classes = [AllowAny]
-        else:
-            self.permission_classes = [IsAuthenticated]
-        return [permission() for permission in self.permission_classes]
+        serializer = UserSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "Пользователь успешно зарегистрирован."}, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class UserDetailView(APIView):
+    """
+    API для получения информации о текущем пользователе.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        """
+        Возвращает данные текущего пользователя.
+        """
+        serializer = UserSerializer(request.user)
+        return Response(serializer.data)

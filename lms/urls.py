@@ -1,14 +1,12 @@
-from rest_framework.routers import DefaultRouter
 from django.urls import path, include
-from .views import CourseViewSet, LessonViewSet
-from .views import SubscriptionView
+from rest_framework.routers import DefaultRouter
+from .views import CourseViewSet, LessonViewSet, SubscriptionAPIView
 
-# Роутеры для автоматической генерации маршрутов
 router = DefaultRouter()
-router.register(r'courses', CourseViewSet, basename='course')
-router.register(r'lessons', LessonViewSet, basename='lesson')
+router.register('courses', CourseViewSet, basename='courses')
+router.register('lessons', LessonViewSet, basename='lessons')
 
 urlpatterns = [
-    path('', include(router.urls)),  # Включаем маршруты роутера
-    path('subscriptions/', SubscriptionView.as_view(), name='subscription'),
+    path('', include(router.urls)),
+    path('subscriptions/', SubscriptionAPIView.as_view(), name='subscriptions'),
 ]
