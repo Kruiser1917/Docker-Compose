@@ -1,10 +1,39 @@
 from rest_framework import viewsets, status
-from rest_framework.views import APIView
-from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
 from .models import Course, Lesson, Subscription
 from .serializers import CourseSerializer, LessonSerializer, SubscriptionSerializer
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from .services.stripe_service import create_product, create_price, create_checkout_session
+from .models import Course, Payment
+
+class CreatePaymentAPIView(APIView):
+    def post(self, request, *args, **kwargs):
+        course_id = request.data.get("course_id")
+        course = Course.objects.get(id=course_id)
+
+        # Создаем продукт в Stripe
+        stripe_product = create_product(name=course.title)
+
+        # Создаем цену для продукта
+        stripe_price = create_price(product_id=stripe_product["id"], amount=int(course.price * 100))
+
+        # Создаем сессию для оплаты
+        success_url = "https://example.com/success"
+        cancel_url = "https://example.com/cancel"
+        stripe_session = create_checkout_session(price_id=stripe_price["id"], success_url=success_url, cancel_url=cancel_url)
+
+        # Сохраняем данные о платеже
+        payment = Payment.objects.create(
+            course=course,
+            stripe_product_id=stripe_product["id"],
+            stripe_price_id=stripe_price["id"],
+            stripe_session_id=stripe_session["id"],
+        )
+
+        return Response({"url": stripe_session["url"]}, status=status.HTTP_201_CREATED)
 
 
 class CourseViewSet(viewsets.ModelViewSet):

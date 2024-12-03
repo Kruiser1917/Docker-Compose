@@ -1,6 +1,13 @@
 from django.db import models
 from django.conf import settings
 
+class Payment(models.Model):
+    course = models.ForeignKey('Course', on_delete=models.CASCADE, related_name='payments')
+    stripe_product_id = models.CharField(max_length=255)
+    stripe_price_id = models.CharField(max_length=255)
+    stripe_session_id = models.CharField(max_length=255, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
 
 class Course(models.Model):
     """
