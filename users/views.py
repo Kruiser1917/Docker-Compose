@@ -8,21 +8,30 @@ from .serializers import UserSerializer
 User = get_user_model()
 
 
+def post(request):
+    """
+    Обработка регистрации нового пользователя.
+    """
+    serializer = UserSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response({"message": "Пользователь успешно зарегистрирован."}, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
 class RegisterView(APIView):
     """
     API для регистрации пользователей.
     """
     permission_classes = [AllowAny]
 
-    def post(self, request, *args, **kwargs):
-        """
-        Обработка регистрации нового пользователя.
-        """
-        serializer = UserSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response({"message": "Пользователь успешно зарегистрирован."}, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+def get(request):
+    """
+    Возвращает данные текущего пользователя.
+    """
+    serializer = UserSerializer(request.user)
+    return Response(serializer.data)
 
 
 class UserDetailView(APIView):
@@ -30,10 +39,3 @@ class UserDetailView(APIView):
     API для получения информации о текущем пользователе.
     """
     permission_classes = [IsAuthenticated]
-
-    def get(self, request, *args, **kwargs):
-        """
-        Возвращает данные текущего пользователя.
-        """
-        serializer = UserSerializer(request.user)
-        return Response(serializer.data)

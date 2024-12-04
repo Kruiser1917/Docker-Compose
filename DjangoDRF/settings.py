@@ -1,37 +1,35 @@
 import os
 from pathlib import Path
-from datetime import timedelta
+from dotenv import load_dotenv
 
-# Базовые настройки проекта
+# Загружаем переменные окружения из .env
+load_dotenv()
+
+# Пути проекта
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure-e#@8=paq2^3a#ez05w!=x&t@s$^icday%*#xxnldzrd5)d1uss'
+# Безопасность
+SECRET_KEY = os.getenv("SECRET_KEY", "your-django-secret-key")
 
-DEBUG = True
+DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "").split(",")
 
-# Установленные приложения
+# Приложения
 INSTALLED_APPS = [
-    # Django приложения
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-
-    # Сторонние приложения
     'rest_framework',
-    'rest_framework_simplejwt',
-    'django_filters',
-
-    # Ваши приложения
-    'users',
+    'drf_yasg',  # Для документации
     'lms',
+    'users',
 ]
 
-# Настройки Middleware
+# Middleware
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -44,6 +42,7 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'DjangoDRF.urls'
 
+# Шаблоны
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -62,15 +61,22 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'DjangoDRF.wsgi.application'
 
-# Настройки базы данных
+# База данных (PostgreSQL)
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.getenv("POSTGRES_DB", "django_db"),
+        'USER': os.getenv("POSTGRES_USER", "postgres"),
+        'PASSWORD': os.getenv("POSTGRES_PASSWORD", "new_simple_password"),
+        'HOST': os.getenv("POSTGRES_HOST", "localhost"),
+        'PORT': os.getenv("POSTGRES_PORT", "5432"),
     }
 }
 
-# Настройки аутентификации и паролей
+# Аутентификация
+AUTH_USER_MODEL = 'users.CustomUser'
+
+# Пароли
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -86,43 +92,33 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-AUTH_USER_MODEL = 'users.CustomUser'  # Укажите кастомную модель пользователя
-
-# Настройки интернационализации
-LANGUAGE_CODE = 'en-us'
-TIME_ZONE = 'UTC'
+# Локаль
+LANGUAGE_CODE = 'ru-ru'
+TIME_ZONE = 'Europe/Moscow'
 USE_I18N = True
 USE_L10N = True
 USE_TZ = True
 
-# Настройки статики
+# Статика
 STATIC_URL = '/static/'
+STATICFILES_DIRS = [BASE_DIR / 'static']
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+# Медиа
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 
-# Настройки Django REST Framework
+# REST Framework
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
-    ),
-    'DEFAULT_PERMISSION_CLASSES': (
-        'rest_framework.permissions.IsAuthenticated',  # По умолчанию все защищено
-    ),
-    'DEFAULT_FILTER_BACKENDS': (
-        'django_filters.rest_framework.DjangoFilterBackend',
-    ),
-}
-
-# Настройки JWT
-SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
-    'ROTATE_REFRESH_TOKENS': True,
-    'BLACKLIST_AFTER_ROTATION': True,
-    'ALGORITHM': 'HS256',
-    'SIGNING_KEY': SECRET_KEY,
-    'AUTH_HEADER_TYPES': ('Bearer',),
-    'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.TokenAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticatedOrReadOnly',
+    ],
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 10,
 }
 
 # Логирование
@@ -130,14 +126,29 @@ LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'handlers': {
-        'console': {
+        'file': {
             'level': 'DEBUG',
-            'class': 'logging.StreamHandler',
+            'class': 'logging.FileHandler',
+            'filename': BASE_DIR / 'debug.log',
         },
     },
-    'root': {
-        'handlers': ['console'],
-        'level': 'DEBUG',
+    'loggers': {
+        'django': {
+            'handlers': ['file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
     },
 }
 
+# Email
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp.example.com")
+EMAIL_PORT = os.getenv("EMAIL_PORT", 587)
+EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "true").lower() == "true"
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "user@example.com")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "password")
+
+# Подключение Stripe
+STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "your-stripe-secret-key")
+STRIPE_PUBLISHABLE_KEY = os.getenv("STRIPE_PUBLISHABLE_KEY", "your-stripe-publishable-key")

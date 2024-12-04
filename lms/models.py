@@ -1,7 +1,9 @@
 from django.db import models
 from django.conf import settings
 
+
 class Payment(models.Model):
+    objects = None
     course = models.ForeignKey('Course', on_delete=models.CASCADE, related_name='payments')
     stripe_product_id = models.CharField(max_length=255)
     stripe_price_id = models.CharField(max_length=255)
@@ -13,6 +15,7 @@ class Course(models.Model):
     """
     Модель курса.
     """
+    objects = None
     title = models.CharField(max_length=255, verbose_name="Название курса")
     description = models.TextField(verbose_name="Описание курса")
     owner = models.ForeignKey(
@@ -30,6 +33,7 @@ class Lesson(models.Model):
     """
     Модель урока.
     """
+    objects = None
     title = models.CharField(max_length=255, verbose_name="Название урока")
     description = models.TextField(verbose_name="Описание урока")
     video_url = models.URLField(verbose_name="Ссылка на видео", blank=True, null=True)
@@ -48,6 +52,7 @@ class Subscription(models.Model):
     """
     Модель подписки на курс.
     """
+    objects = None
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
