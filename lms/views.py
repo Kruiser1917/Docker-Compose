@@ -1,100 +1,73 @@
-from django.shortcuts import get_object_or_404
-from rest_framework import status
-from rest_framework import viewsets
-from rest_framework.permissions import IsAuthenticated
+from rest_framework import viewsets, status
+from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.views import APIView
-
-from .models import Course, Payment
-from .models import Lesson, Subscription
-from .serializers import CourseSerializer, LessonSerializer
-from .services.stripe_service import create_product, create_price, create_checkout_session
-
-
-def post(request):
-    course_id = request.data.get("course_id")
-    course = Course.objects.get(id=course_id)
-
-    # Создаем продукт в Stripe
-    stripe_product = create_product(name=course.title)
-
-    # Создаем цену для продукта
-    stripe_price = create_price(product_id=stripe_product["id"], amount=int(course.price * 100))
-
-    # Создаем сессию для оплаты
-    success_url = "https://example.com/success"
-    cancel_url = "https://example.com/cancel"
-    stripe_session = create_checkout_session(price_id=stripe_price["id"], success_url=success_url,
-                                             cancel_url=cancel_url)
-
-    # Сохраняем данные о платеже
-    Payment.objects.create(
-        course=course,
-        stripe_product_id=stripe_product["id"],
-        stripe_price_id=stripe_price["id"],
-        stripe_session_id=stripe_session["id"],
-    )
-
-    return Response({"url": stripe_session["url"]}, status=status.HTTP_201_CREATED)
-
-
-class CreatePaymentAPIView(APIView):
-    pass
-
+from django.utils.timezone import now
+from .models import Course, Lesson, Subscription
+from .serializers import CourseSerializer, LessonSerializer, SubscriptionSerializer
+from .tasks import send_course_update_notification
 
 class CourseViewSet(viewsets.ModelViewSet):
-    """
-    ViewSet для работы с курсами.
-    """
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
 
-    def get_queryset(self):
-        """
-        Переопределяем метод для добавления контекста запроса.
-        """
-        user = self.request.user
-        if user.is_authenticated:
-            return Course.objects.all()
-        return Course.objects.none()
+    @action(detail=True, methods=['get'])
+    def lessons(self, request, pk=None):
+        """Получить список уроков для курса."""
+        course = self.get_object()
+        lessons = Lesson.objects.filter(course=course)
+        serializer = LessonSerializer(lessons, many=True)
+        return Response(serializer.data)
 
+    @action(detail=True, methods=['post'])
+    def update_course(self, request, pk=None):
+        """Обновление курса и уведомление подписчиков."""
+        course = self.get_object()
+        serializer = self.get_serializer(course, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        # Уведомляем подписчиков через Celery
+        send_course_update_notification.delay(course.id)
+        return Response({'message': 'Course updated and notifications sent.'}, status=status.HTTP_200_OK)
+
+    def perform_create(self, serializer):
+        """Создание курса с асинхронным уведомлением."""
+        course = serializer.save()
+        send_course_update_notification.delay(course.id)
 
 class LessonViewSet(viewsets.ModelViewSet):
-    """
-    ViewSet для работы с уроками.
-    """
     queryset = Lesson.objects.all()
     serializer_class = LessonSerializer
 
-    def get_queryset(self):
-        """
-        Переопределяем метод для фильтрации уроков по курсам.
-        """
-        course_id = self.request.query_params.get('course_id')
-        if course_id:
-            return Lesson.objects.filter(course_id=course_id)
-        return super().get_queryset()
+    def perform_create(self, serializer):
+        """Создание урока с уведомлением, если курс давно не обновлялся."""
+        lesson = serializer.save()
+        course = lesson.course
+        if (now() - course.updated_at).total_seconds() > 4 * 3600:
+            send_course_update_notification.delay(course.id)
 
+    def perform_update(self, serializer):
+        """Обновление урока с проверкой на время обновления курса."""
+        lesson = serializer.save()
+        course = lesson.course
+        if (now() - course.updated_at).total_seconds() > 4 * 3600:
+            send_course_update_notification.delay(course.id)
 
-def post(request):
-    """
-    Метод для добавления или удаления подписки.
-    """
-    user = request.user
-    course_id = request.data.get('course_id')
-    course = get_object_or_404(Course, id=course_id)
+class SubscriptionViewSet(viewsets.ModelViewSet):
+    queryset = Subscription.objects.all()
+    serializer_class = SubscriptionSerializer
 
-    # Проверяем, есть ли подписка
-    subscription, created = Subscription.objects.get_or_create(user=user, course=course)
-    if created:
-        return Response({'message': 'Подписка добавлена'}, status=status.HTTP_201_CREATED)
-    else:
-        subscription.delete()
-        return Response({'message': 'Подписка удалена'}, status=status.HTTP_200_OK)
+    @action(detail=False, methods=['post'])
+    def subscribe(self, request):
+        """Подписка на курс."""
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(user=request.user)
+        return Response({'message': 'Subscription successful.'}, status=status.HTTP_201_CREATED)
 
-
-class SubscriptionAPIView(APIView):
-    """
-    APIView для работы с подписками на курсы.
-    """
-    permission_classes = [IsAuthenticated]
+    @action(detail=False, methods=['get'])
+    def user_subscriptions(self, request):
+        """Получение списка подписок текущего пользователя."""
+        subscriptions = Subscription.objects.filter(user=request.user)
+        serializer = self.get_serializer(subscriptions, many=True)
+        return Response(serializer.data)

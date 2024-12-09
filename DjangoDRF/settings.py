@@ -1,19 +1,16 @@
-import os
 from pathlib import Path
-from dotenv import load_dotenv
+import os
 
-# Загружаем переменные окружения из .env
-load_dotenv()
-
-# Пути проекта
+# Базовые настройки
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Безопасность
-SECRET_KEY = os.getenv("SECRET_KEY", "your-django-secret-key")
+# Генерируем SECRET_KEY, если он не задан
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'your-default-secret-key')
 
-DEBUG = os.getenv("DEBUG", "False").lower() == "true"
+# DEBUG-режим
+DEBUG = os.getenv('DEBUG', 'False').lower() in ('true', '1', 'yes')
 
-ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "").split(",")
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '*').split(',')
 
 # Приложения
 INSTALLED_APPS = [
@@ -24,12 +21,11 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'drf_yasg',  # Для документации
-    'lms',
-    'users',
+    'django_celery_beat',  # Для работы с celery-beat
+    'lms',  # Ваше приложение для курсов
+    'users',  # Приложение для пользователей
 ]
 
-# Middleware
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -42,7 +38,6 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'DjangoDRF.urls'
 
-# Шаблоны
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -61,22 +56,19 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'DjangoDRF.wsgi.application'
 
-# База данных (PostgreSQL)
+# База данных: PostgreSQL
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv("POSTGRES_DB", "django_db"),
-        'USER': os.getenv("POSTGRES_USER", "postgres"),
-        'PASSWORD': os.getenv("POSTGRES_PASSWORD", "new_simple_password"),
-        'HOST': os.getenv("POSTGRES_HOST", "localhost"),
-        'PORT': os.getenv("POSTGRES_PORT", "5432"),
+        'NAME': os.getenv('POSTGRES_DB', 'your_database_name'),
+        'USER': os.getenv('POSTGRES_USER', 'your_database_user'),
+        'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'your_database_password'),
+        'HOST': os.getenv('POSTGRES_HOST', 'localhost'),
+        'PORT': os.getenv('POSTGRES_PORT', '5432'),
     }
 }
 
-# Аутентификация
-AUTH_USER_MODEL = 'users.CustomUser'
-
-# Пароли
+# Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -92,63 +84,72 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-# Локаль
+# Интернационализация
 LANGUAGE_CODE = 'ru-ru'
 TIME_ZONE = 'Europe/Moscow'
 USE_I18N = True
-USE_L10N = True
 USE_TZ = True
 
-# Статика
+# Статические и медиа файлы
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
-STATIC_ROOT = BASE_DIR / 'staticfiles'
-
-# Медиа
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-# REST Framework
+# Пользовательская модель
+AUTH_USER_MODEL = 'users.CustomUser'
+
+# Настройки Celery
+REDIS_HOST = os.getenv('REDIS_HOST', 'localhost')
+REDIS_PORT = os.getenv('REDIS_PORT', '6379')
+REDIS_URL = f'redis://{REDIS_HOST}:{REDIS_PORT}/0'
+
+CELERY_BROKER_URL = REDIS_URL
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_BACKEND = REDIS_URL
+CELERY_TIMEZONE = TIME_ZONE
+CELERY_ENABLE_UTC = False
+
+# Email-рассылка
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.example.com')
+EMAIL_PORT = int(os.getenv('EMAIL_PORT', '587'))
+EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() in ('true', '1', 'yes')
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', 'your-email@example.com')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', 'your-email-password')
+
+# DRF настройки
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.SessionAuthentication',
-        'rest_framework.authentication.TokenAuthentication',
+        'rest_framework.authentication.BasicAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticatedOrReadOnly',
+        'rest_framework.permissions.IsAuthenticated',
     ],
-    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 10,
 }
 
-# Логирование
+# Celery-Beat
+INSTALLED_APPS += ['django_celery_beat']
+
+# Логи
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'handlers': {
-        'file': {
-            'level': 'DEBUG',
-            'class': 'logging.FileHandler',
-            'filename': BASE_DIR / 'debug.log',
+        'console': {
+            'class': 'logging.StreamHandler',
         },
     },
-    'loggers': {
-        'django': {
-            'handlers': ['file'],
-            'level': 'DEBUG',
-            'propagate': True,
-        },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
     },
 }
 
-# Email
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp.example.com")
-EMAIL_PORT = os.getenv("EMAIL_PORT", 587)
-EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "true").lower() == "true"
-EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "user@example.com")
-EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "password")
-
-# Подключение Stripe
-STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "your-stripe-secret-key")
-STRIPE_PUBLISHABLE_KEY = os.getenv("STRIPE_PUBLISHABLE_KEY", "your-stripe-publishable-key")
+# Настройка для документации Swagger/OpenAPI
+SWAGGER_SETTINGS = {
+    'DEFAULT_API_URL': 'http://localhost:8000',
+    'USE_SESSION_AUTH': True,
+}
