@@ -1,5 +1,6 @@
 from pathlib import Path
 import os
+from celery import schedules
 
 # Базовые настройки
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -104,13 +105,18 @@ REDIS_HOST = os.getenv('REDIS_HOST', 'localhost')
 REDIS_PORT = os.getenv('REDIS_PORT', '6379')
 REDIS_URL = f'redis://{REDIS_HOST}:{REDIS_PORT}/0'
 
-CELERY_BROKER_URL = REDIS_URL
+CELERY_BROKER_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_BACKEND = REDIS_URL
-CELERY_TIMEZONE = TIME_ZONE
-CELERY_ENABLE_UTC = False
-
+CELERY_RESULT_BACKEND = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+CELERY_TIMEZONE = "UTC"
+CELERY_ENABLE_UTC = True
+CELERY_BEAT_SCHEDULE = {
+    "block-inactive-users-every-day": {
+        "task": "your_app.tasks.block_inactive_users",
+        "schedule": schedules.crontab(hour=0, minute=0),  # Выполняется каждый день в полночь
+    },
+}
 # Email-рассылка
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.example.com')

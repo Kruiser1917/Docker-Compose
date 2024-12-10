@@ -1,9 +1,10 @@
 from celery import shared_task
-from django.utils.timezone import now, timedelta
-from .models import CustomUser
+from django.contrib.auth.models import User
+from django.utils.timezone import now
+from datetime import timedelta
 
 @shared_task
-def deactivate_inactive_users():
-    one_month_ago = now() - timedelta(days=30)
-    inactive_users = CustomUser.objects.filter(last_login__lt=one_month_ago, is_active=True)
-    inactive_users.update(is_active=False)
+def block_inactive_users():
+    """Блокирует пользователей, которые не заходили больше месяца."""
+    threshold_date = now() - timedelta(days=30)
+    User.objects.filter(last_login__lt=threshold_date, is_active=True).update(is_active=False)
