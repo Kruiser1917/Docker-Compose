@@ -113,7 +113,7 @@ CELERY_TIMEZONE = "UTC"
 CELERY_ENABLE_UTC = True
 CELERY_BEAT_SCHEDULE = {
     "block-inactive-users-every-day": {
-        "task": "your_app.tasks.block_inactive_users",
+        "task": "users.tasks.block_inactive_users",
         "schedule": schedules.crontab(hour=0, minute=0),  # Выполняется каждый день в полночь
     },
 }
