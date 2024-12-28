@@ -1,0 +1,42 @@
+name: CI/CD Workflow
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Run tests
+        run: python manage.py test
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to server
+        env:
+          SSH_PRIVATE_KEY: ${{ MIIEpAIBAAKCAQEAwvrWR0vdvTbVng3HgtaoJwRYAgHYg6wyhMGdQ6biBOe2oA4EeeC1JhLVm1ExfiQ5Qawz+djyNq+tvD9kBLESzBGjPmWbn0ykwyfPCuCdAx3OuQoGz6ynGKiO6N4c6p6rNxUFp3Qt962HK0WbZbg5EOOiqDrbPCdpDAZCp/7Fql1h14FJG5BR+V+TRNvuRDklZpBPHmOROLE2Wmsgc1K9ovj2lf4LKszIKtV4+6JZFmExYPCpvN9edCKcHgtO3dt6EHA6Z/IxJU8mbF+DLyV4meZ7KUrlBBHgJUw7KaPolBFIWI3lMiy9adUR1nHh25HKxcti1lo7G8Vaw8iq7ijFGwIDAQABAoIBADFkjce95kw6id7iKrpwWmSX6xuHECw7AQk0avxqWDNZ55+gLW4aiIk+mDIiXWFRF9gVIY2XcbR8yIw5msK9gL+FcE8sOkIejlaJzR86S0wwzt99NMCDQkky2hEPw0+EJmdrweTrv4FQyj8iAP3Br2Mh52CqmEMi0K+lHlmkZrqDQEKcGnBVyHZSmOPjceorttxgRkYQIZSXA7wXrDRoEZ28RTuCYJDrMgHof97JPFl87M09HagYSDN9mjPzEfXp37TyWJxlOID4BDPx08GgMnYA4yAl9KcQ2/DZJVTtHE0HYJuPt3q3YyiQGfVuO4Ox/rur5Z88x3/31oxAp87dTQECgYEA4vAEbc7NiCRpJ8moCwygmzMa0sB67e9iccxqoRtt+N3jY0HunKtXCaFsaVBXuwDhuCM5opyovPjv9/aIZS9NCmPuIabzMTTWjX/YGEaX0NaSGV2RdgnHCjZbNJzwbbm37SPw9PmI/fJle5+expc2FyHmVYcOHYZH8JgVYDyvQUECgYEA2/Mb0aPpDFIQD0tFzvYhBTAsI5rnQWvG+cw29Kf64Vx6WDZOV+c9M27RnG6sq4y8OSdbg0SDO1/oYlGOmjlGle7nuF5Xtir/Kd71hRGh6meHroosZDLr5UvIcBTxojunM4AagFvwDBKxsu7fbYR7PnxJcis1b+Iq4T3A+9AU01sCgYEA2pQZf/ZHSpDfY748h9/ytWmEtWdFP/VpGXitX11/D8wQHuM7Q1VYsOL0+36x8WFJB0WOVsyTTehroaan+uWTS6WykGEwLb3ZxVJUvhUIVtLEx3+zAkEqn/B46nUasmTF/be3dwz94LLfAjJdCKROKfux0cESXGeg1OB2/kmU98ECgYATtCim1Cc5elSD+jtLuhLlMxaRLfxPiQcvM5Mswaug6rbvFhZYm5eI9wGCIQwI5jeqaxMwpD+ZXxMjU6kRudXP8rIBezoiUKHBL38RJ644oIOwKCKn60Pkq7BOEiI/ZVaqL2ywWQwdGMOggvOzDO45f8rYlnRYDIvI185lAJQNBwKBgQCcsA9Pr0xEFcRbmp6ldosri1CqxoN+FsCdHZLyt0bV9RhwLAyQZ0K+Vt4+A1YpDBd0ezC1Xc0vcK/Fi/n3kYnCHVjb3+5pCqj5s8ZZDHa32AC+0d63Xw93Fm/FXNRsTgEeUm8Q9aHxaZ+Xe4vpzmuT5jUyl2zjgnWjq8giP/QHvg==  }}
+          SERVER_IP: ${{ 185.237.165.164 }}
+          SERVER_USER: ${{ aptik }}
+        run: |
+          ssh -o StrictHostKeyChecking=no $SERVER_USER@$SERVER_IP << 'EOF'
+          cd /path/to/your_project
+          git pull origin main
+          source venv/bin/activate
+          pip install -r requirements.txt
+          sudo systemctl restart your_project
+          EOF
