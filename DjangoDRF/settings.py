@@ -1,10 +1,11 @@
 from pathlib import Path
 import os
 from celery import schedules
+from dotenv import load_dotenv
 
 # Базовые настройки
 BASE_DIR = Path(__file__).resolve().parent.parent
-
+load_dotenv(BASE_DIR / '.env')
 # Генерируем SECRET_KEY, если он не задан
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'your-default-secret-key')
 
@@ -26,6 +27,10 @@ INSTALLED_APPS = [
     'lms',  # Ваше приложение для курсов
     'users',  # Приложение для пользователей
 ]
+
+# Stripe Configuration
+STRIPE_SECRET_KEY = os.getenv('STRIPE_SECRET_KEY', '4242424242424242')
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -57,17 +62,20 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'DjangoDRF.wsgi.application'
 
-# База данных: PostgreSQL
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('POSTGRES_DB', 'your_database_name'),
-        'USER': os.getenv('POSTGRES_USER', 'your_database_user'),
-        'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'your_database_password'),
-        'HOST': os.getenv('POSTGRES_HOST', 'localhost'),
-        'PORT': os.getenv('POSTGRES_PORT', '5432'),
+        'NAME': os.getenv('DB_NAME'),
+        'USER': os.getenv('DB_USER'),
+        'PASSWORD': os.getenv('DB_PASSWORD'),
+        'HOST': os.getenv('DB_HOST'),
+        'PORT': os.getenv('DB_PORT'),
     }
 }
+
+
+
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
@@ -93,7 +101,9 @@ USE_TZ = True
 
 # Статические и медиа файлы
 STATIC_URL = '/static/'
-STATICFILES_DIRS = [BASE_DIR / 'static']
+STATICFILES_DIRS = [
+    BASE_DIR / "static",
+]
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
@@ -136,8 +146,6 @@ REST_FRAMEWORK = {
     ],
 }
 
-# Celery-Beat
-INSTALLED_APPS += ['django_celery_beat']
 
 # Логи
 LOGGING = {

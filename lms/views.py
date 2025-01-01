@@ -5,6 +5,25 @@ from django.utils.timezone import now
 from .models import Course, Lesson, Subscription
 from .serializers import CourseSerializer, LessonSerializer, SubscriptionSerializer
 from .tasks import send_course_update_notification
+from .services.stripe_service import create_checkout_session
+from rest_framework.views import APIView
+from rest_framework.viewsets import ViewSet
+
+class SubscriptionViewSet(ViewSet):
+    """
+    ViewSet для управления подписками.
+    """
+    def list(self, request):
+        subscriptions = Subscription.objects.all()
+        serializer = SubscriptionSerializer(subscriptions, many=True)
+        return Response(serializer.data)
+
+    def create(self, request):
+        serializer = SubscriptionSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=201)
+        return Response(serializer.errors, status=400)
 
 class CourseViewSet(viewsets.ModelViewSet):
     queryset = Course.objects.all()
@@ -53,6 +72,13 @@ class LessonViewSet(viewsets.ModelViewSet):
         if (now() - course.updated_at).total_seconds() > 4 * 3600:
             send_course_update_notification.delay(course.id)
 
+class CreatePaymentAPIView(APIView):
+    def post(self, request, *args, **kwargs):
+        try:
+            session_url = create_checkout_session(request.data)
+            return Response({'url': session_url}, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 class SubscriptionViewSet(viewsets.ModelViewSet):
     queryset = Subscription.objects.all()
     serializer_class = SubscriptionSerializer
