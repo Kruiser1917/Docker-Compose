@@ -2,6 +2,7 @@ from pathlib import Path
 import os
 from celery import schedules
 from dotenv import load_dotenv
+import sys
 
 # Базовые настройки
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -62,6 +63,17 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'DjangoDRF.wsgi.application'
 
+if 'test' in sys.argv or os.getenv('GITHUB_ACTIONS', False):
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.getenv('DB_NAME', 'test_database'),
+            'USER': os.getenv('DB_USER', 'test_user'),
+            'PASSWORD': os.getenv('DB_PASSWORD', 'test_password'),
+            'HOST': os.getenv('DB_HOST', 'localhost'),
+            'PORT': os.getenv('DB_PORT', '5432'),
+        }
+    }
 
 DATABASES = {
     'default': {
