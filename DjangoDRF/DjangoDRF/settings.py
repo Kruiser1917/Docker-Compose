@@ -12,7 +12,8 @@ SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'your-default-secret-key')
 # DEBUG-режим
 DEBUG = os.getenv('DEBUG', 'False').lower() in ('true', '1', 'yes')
 
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '*').split(',')
+ALLOWED_HOSTS = ['185.237.165.164', 'localhost', '127.0.0.1']
+
 
 # Приложения
 INSTALLED_APPS = [
@@ -21,6 +22,7 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
+    'django_extensions',
     'django.contrib.staticfiles',
     'rest_framework',
     'django_celery_beat',  # Для работы с celery-beat
@@ -66,11 +68,14 @@ WSGI_APPLICATION = 'DjangoDRF.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('DB_NAME'),
-        'USER': os.getenv('DB_USER'),
-        'PASSWORD': os.getenv('DB_PASSWORD'),
-        'HOST': os.getenv('DB_HOST'),
-        'PORT': os.getenv('DB_PORT'),
+        'NAME': os.getenv('DB_NAME', 'mydatabase'),
+        'USER': os.getenv('DB_USER', 'postgres'),
+        'PASSWORD': os.getenv('DB_PASSWORD', 'new_simple_password'),
+        'HOST': os.getenv('DB_HOST', 'localhost'),
+        'PORT': os.getenv('DB_PORT', '5432'),
+        'OPTIONS': {
+            'client_encoding': 'utf8',
+        },
     }
 }
 

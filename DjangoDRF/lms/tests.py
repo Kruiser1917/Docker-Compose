@@ -3,6 +3,13 @@ from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
 from rest_framework import status
 from .models import Course, Lesson, Subscription
+from lms.models import Course, Lesson, Subscription
+
+import django
+
+print("Django version:", django.get_version())
+from django.contrib.auth import get_user_model
+print("User model:", get_user_model())
 
 User = get_user_model()
 
@@ -52,3 +59,7 @@ class SubscriptionTestCase(TestCase):
         data = {"course_id": self.course.id}
         response = self.client.post("/api/subscriptions/", data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+class SampleTest(TestCase):
+    def test_example(self):
+        self.assertEqual(1 + 1, 2)
