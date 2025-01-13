@@ -8,3 +8,5 @@ env/
 *.pyo
 *.log
 static/
+venv/
+
