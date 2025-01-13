@@ -66,11 +66,6 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v3
-      
-    - name: Clear cache
-      run: |
-        rm -rf /root/.cache/pip
-        rm -rf /root/Homework_DRF
 
     - name: Deploy to server
       env:
