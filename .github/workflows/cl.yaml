@@ -71,10 +71,13 @@ jobs:
       - name: Deploy to server
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          SSH_PUBLIC_KEY: ${{ secrets.SSH_PUBLIC_KEY }}
-          ROOT_PASSWORD: ${{ secrets.ROOT_PASSWORD }}
         run: |
           mkdir -p ~/.ssh
           echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no root@185.237.165.164 "cd /var/www/homework_35_2 && git pull && poetry install && sudo systemctl restart nginx"
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no root@185.237.165.164 "
+              export PATH=\"$HOME/.local/bin:\$PATH\" &&
+              cd /var/www/homework_35_2 &&
+              git pull &&
+              poetry install &&
+              sudo systemctl restart nginx"
