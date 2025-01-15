@@ -1,0 +1,8 @@
+
+
+на серв
+scp /path/to/requirements.txt root@185.237.165.164:/root/myproject/DjangoDRF
+
+переключиться на струтуру активировать верт окружение
+cd ~/myproject/DjangoDRF
+source venv/bin/activate
