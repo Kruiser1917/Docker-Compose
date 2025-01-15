@@ -36,7 +36,7 @@ jobs:
           sudo -u postgres psql -c "GRANT CREATE ON SCHEMA public TO runner;"
 
       - name: Run makemigrations
-        working-directory: ./путь_до_папки_с_manage.py
+        working-directory: /home/runner/work/Docker-Compose/Docker-Compose
         env:
           DJANGO_SETTINGS_MODULE: config.settings
           DATABASE_URL: postgres://runner:12345@localhost:5432/lesson
