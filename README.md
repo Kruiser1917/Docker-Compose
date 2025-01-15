@@ -3,7 +3,7 @@
 1. Клонировать репозиторий:
 
 ```
-https://github.com/AleksandrIlin/Homework_DRF
+https://github.com/Kruiser1917/Docker-Compose/tree/homework_35_2
 ```
 
 2. Установка зависимостей:
