@@ -44,7 +44,7 @@ jobs:
           poetry run python manage.py makemigrations
 
       - name: Run migrate
-        working-directory: ./путь_до_папки_с_manage.py
+        working-directory: /home/runner/work/Docker-Compose/Docker-Compose
         env:
           DJANGO_SETTINGS_MODULE: config.settings
           DATABASE_URL: postgres://runner:12345@localhost:5432/lesson
@@ -52,7 +52,7 @@ jobs:
           poetry run python manage.py migrate
 
       - name: Run tests
-        working-directory: ./путь_до_папки_с_manage.py
+        working-directory: /home/runner/work/Docker-Compose/Docker-Compose
         env:
           DJANGO_SETTINGS_MODULE: config.settings
           DATABASE_URL: postgres://runner:12345@localhost:5432/lesson
