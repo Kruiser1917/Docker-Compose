@@ -1,20 +1,31 @@
+import datetime
+
+import pytz
 from celery import shared_task
-from telegram import Bot
-from habit_tracker.models import Habit
+
+from config import settings
+from habits.models import Habit
+from habits.services import send_telegram_message
 
 
 @shared_task
-def send_reminder(chat_id, message):
-    bot = Bot(token='7480428085:AAFiSltMiRKy4zr1FhO3vwY2FMsSyj5fcjs')
-    bot.send_message(chat_id=chat_id, text=message)
+def check_habits():
+    """
+    Периодическая задача
+    """
+    zone = pytz.timezone(settings.TIME_ZONE)
+    now = datetime.datetime.now(zone)
+    habits = Habit.objects.filter(owner__tg_chat_id__isnull=False)
 
+    for habit in habits:
+        if habit.time <= now:
+            tg_chat_id = habit.owner.tg_chat_id
 
-@shared_task
-def send_habit_reminder(habit_id):
-    try:
-        habit = Habit.objects.get(id=habit_id)
-        bot = Bot(token='YOUR_BOT_TOKEN')
-        message = f"Напоминание о привычке: {habit.action} в {habit.place} в {habit.time}."
-        bot.send_message(chat_id='YOUR_CHAT_ID', text=message)
-    except Habit.DoesNotExist:
-        pass
+            if habit.place:
+                message = f"Пришло время {habit.action} в {habit.place}"
+            else:
+                message = f"Пришло время {habit.action}"
+            send_telegram_message(tg_chat_id, message)
+            habit.time += habit.get_periodicity_timedelta()
+            print(habit.time)
+            habit.save()

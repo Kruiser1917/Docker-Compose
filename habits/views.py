@@ -1,42 +1,75 @@
-from rest_framework.viewsets import ModelViewSet
-from habit_tracker.models import Habit
-from .serializers import HabitSerializer
-from .permissions import IsOwnerOrReadOnly
-from .tasks import send_habit_reminder
-from rest_framework.generics import ListAPIView
+from django.utils.decorators import method_decorator
+from drf_yasg.utils import swagger_auto_schema
+from rest_framework import generics, viewsets
+from rest_framework.permissions import IsAuthenticated
+
+from habits.models import Habit
+from habits.pagination import HabitsPagination
+from habits.serializers import HabitSerializer
+from users.permissions import IsOwner
 
 
-class PublicHabitsView(ListAPIView):
+@method_decorator(
+    name="list",
+    decorator=swagger_auto_schema(
+        operation_description="Контроллер для получения списка всех привычек"
+    ),
+)
+@method_decorator(
+    name="retrieve",
+    decorator=swagger_auto_schema(
+        operation_description="Контроллер для получения конкретной привычки"
+    ),
+)
+@method_decorator(
+    name="create",
+    decorator=swagger_auto_schema(
+        operation_description="Контроллер для создания привычки"
+    ),
+)
+@method_decorator(
+    name="update",
+    decorator=swagger_auto_schema(
+        operation_description="Контроллер для обновления информации о привычке"
+    ),
+)
+@method_decorator(
+    name="partial_update",
+    decorator=swagger_auto_schema(
+        operation_description="Контроллер для частичного изменения информации о привычке"
+    ),
+)
+@method_decorator(
+    name="destroy",
+    decorator=swagger_auto_schema(
+        operation_description="Контроллер для удаления привычки"
+    ),
+)
+class HabitViewSet(viewsets.ModelViewSet):
+    """CRUD привычек."""
+
+    queryset = Habit.objects.all()
+    serializer_class = HabitSerializer
+    permission_classes = (IsAuthenticated,)
+    pagination_class = HabitsPagination
+
+    def get_queryset(self):
+        return Habit.objects.filter(owner=self.request.user.id)
+
+    def perform_create(self, serializer):
+        habit = serializer.save(owner=self.request.user)
+        habit.save()
+
+    def get_permissions(self):
+        if self.action != "create":
+            self.permission_classes = [IsOwner]
+        return super().get_permissions()
+
+
+class PublicHabitListAPIView(generics.ListAPIView):
+    """Контроллер для вывода списка публичных привычек."""
+
+    serializer_class = HabitSerializer
     queryset = Habit.objects.filter(is_public=True)
-    serializer_class = HabitSerializer
-
-
-def perform_create(self, serializer):
-    habit = serializer.save(creator=self.request.user)
-    send_habit_reminder.apply_async((habit.id,), countdown=10)  # Отложенное выполнение через 10 секунд
-
-
-class HabitViewSet(ModelViewSet):
-    queryset = Habit.objects.all()
-    serializer_class = HabitSerializer
-    permission_classes = [IsOwnerOrReadOnly]
-
-    def get_queryset(self):
-        # Публичные привычки и привычки текущего пользователя
-        return Habit.objects.filter(creator=self.request.user) | Habit.objects.filter(is_public=True)
-
-    def perform_create(self, serializer):
-        serializer.save(creator=self.request.user)
-
-
-class HabitViewSet(ModelViewSet):
-    queryset = Habit.objects.all()
-    serializer_class = HabitSerializer
-
-    def get_queryset(self):
-        if self.request.user.is_authenticated:
-            return Habit.objects.filter(creator=self.request.user)
-        return Habit.objects.filter(is_public=True)
-
-    def perform_create(self, serializer):
-        serializer.save(creator=self.request.user)
+    permission_classes = [IsAuthenticated]
+    pagination_class = HabitsPagination

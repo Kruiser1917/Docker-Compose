@@ -4,9 +4,9 @@ services:
   db:
     image: postgres:latest
     environment:
-      POSTGRES_DB: habit_tracker
-      POSTGRES_USER: habit_user
-      POSTGRES_PASSWORD: habit_pass
+      POSTGRES_DB: mydatabase
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: new_simple_password
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
@@ -29,9 +29,9 @@ services:
       - DEBUG=True
       - DB_HOST=db
       - DB_PORT=5432
-      - DB_NAME=habit_tracker
-      - DB_USER=habit_user
-      - DB_PASSWORD=habit_pass
+      - DB_NAME=mydatabase
+      - DB_USER=postgres
+      - DB_PASSWORD=new_simple_password
 
   nginx:
     image: nginx:latest
